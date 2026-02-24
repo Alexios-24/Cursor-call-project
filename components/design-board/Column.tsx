@@ -9,6 +9,7 @@ import { TaskCard } from "@/components/design-board/TaskCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useBoardStore } from "@/lib/store"
 import { Column as ColumnType, Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -19,6 +20,7 @@ export function Column({
   column: ColumnType
   tasks: Task[]
 }) {
+  const openAddTaskSheet = useBoardStore((state) => state.openAddTaskSheet)
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
     data: {
@@ -40,7 +42,12 @@ export function Column({
             <CardTitle className="text-sm">{column.title}</CardTitle>
             <p className="text-muted-foreground mt-1 text-xs">{column.description}</p>
           </div>
-          <Button variant="ghost" size="icon-xs" aria-label={`Add task in ${column.title}`}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Add task in ${column.title}`}
+            onClick={() => openAddTaskSheet(column.id)}
+          >
             <PlusIcon />
           </Button>
         </div>

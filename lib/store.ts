@@ -3,13 +3,21 @@
 import { create } from "zustand"
 
 import { BOARD_COLUMNS, INITIAL_TASKS } from "@/lib/constants"
-import { BoardStage, BoardView, TagType, Task, TaskScopeFilter } from "@/lib/types"
+import { BoardStage, BoardView, Priority, TagType, Task, TaskScopeFilter } from "@/lib/types"
 
 interface MoveTaskParams {
   activeId: string
   sourceStage: BoardStage
   targetStage: BoardStage
   overTaskId?: string
+}
+
+interface AddTaskParams {
+  title: string
+  columnId: BoardStage
+  assigneeName?: string
+  dueDate?: string
+  priority: Priority
 }
 
 interface BoardState {
@@ -20,10 +28,15 @@ interface BoardState {
   searchQuery: string
   activeTags: TagType[]
   view: BoardView
+  isAddTaskSheetOpen: boolean
+  addTaskDraftColumn: BoardStage
   setScope: (scope: TaskScopeFilter) => void
   setSearchQuery: (query: string) => void
   toggleTag: (tag: TagType) => void
   setView: (view: BoardView) => void
+  openAddTaskSheet: (columnId?: BoardStage) => void
+  closeAddTaskSheet: () => void
+  addTask: (params: AddTaskParams) => void
   moveTask: (params: MoveTaskParams) => void
   toggleAuditItem: (taskId: string, itemId: string) => void
   setValidationOverride: (taskId: string, overrideReason: string) => void
@@ -62,6 +75,32 @@ function findTaskLocation(tasksByColumn: Record<BoardStage, Task[]>, taskId: str
   return null
 }
 
+function getNextTaskId(tasksByColumn: Record<BoardStage, Task[]>) {
+  let maxId = 0
+  for (const tasks of Object.values(tasksByColumn)) {
+    for (const task of tasks) {
+      const match = task.id.match(/^DT-(\d+)$/)
+      if (!match) {
+        continue
+      }
+      maxId = Math.max(maxId, Number(match[1]))
+    }
+  }
+  return `DT-${String(maxId + 1).padStart(3, "0")}`
+}
+
+function formatTodayDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function toAssigneeId(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 export const useBoardStore = create<BoardState>((set) => ({
   currentUserId: "john-smith",
   columns: BOARD_COLUMNS,
@@ -70,6 +109,8 @@ export const useBoardStore = create<BoardState>((set) => ({
   searchQuery: "",
   activeTags: [],
   view: "board",
+  isAddTaskSheetOpen: false,
+  addTaskDraftColumn: "backlog",
   setScope: (scope) => set({ scope }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   toggleTag: (tag) =>
@@ -79,6 +120,55 @@ export const useBoardStore = create<BoardState>((set) => ({
         : [...state.activeTags, tag],
     })),
   setView: (view) => set({ view }),
+  openAddTaskSheet: (columnId) =>
+    set((state) => ({
+      isAddTaskSheetOpen: true,
+      addTaskDraftColumn: columnId ?? state.addTaskDraftColumn,
+    })),
+  closeAddTaskSheet: () => set({ isAddTaskSheetOpen: false }),
+  addTask: ({ title, columnId, assigneeName, dueDate, priority }) =>
+    set((state) => {
+      const next = deepCloneTasks(state.tasksByColumn)
+      const trimmedTitle = title.trim()
+      if (!trimmedTitle) {
+        return state
+      }
+
+      const trimmedAssigneeName = assigneeName?.trim()
+      const task: Task = {
+        id: getNextTaskId(state.tasksByColumn),
+        title: trimmedTitle,
+        columnId,
+        createdAt: formatTodayDate(),
+        createdBy: state.currentUserId,
+        dueDate: dueDate || undefined,
+        priority,
+        tags: [],
+        commentsPreview: "",
+        activityCount: 0,
+        auditChecklist: [],
+        validationGate: {
+          hypothesis: "Awaiting validation details.",
+          evidence: "No evidence recorded yet.",
+          confidence: "low",
+          state: "partially-validated",
+        },
+        assignee: trimmedAssigneeName
+          ? {
+              id: toAssigneeId(trimmedAssigneeName) || "unassigned",
+              name: trimmedAssigneeName,
+              role: "Designer",
+            }
+          : undefined,
+      }
+
+      next[columnId] = [task, ...next[columnId]]
+      return {
+        tasksByColumn: next,
+        isAddTaskSheetOpen: false,
+        addTaskDraftColumn: columnId,
+      }
+    }),
   moveTask: ({ activeId, sourceStage, targetStage, overTaskId }) =>
     set((state) => {
       const next = deepCloneTasks(state.tasksByColumn)

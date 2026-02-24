@@ -4,6 +4,7 @@ import * as React from "react"
 import dynamic from "next/dynamic"
 
 import { AddTaskFAB } from "@/components/design-board/AddTaskFAB"
+import { AddTaskSheet } from "@/components/design-board/AddTaskSheet"
 import { BoardHeader } from "@/components/design-board/BoardHeader"
 import { DesignSidebar } from "@/components/design-board/DesignSidebar"
 import { FilterBar } from "@/components/design-board/FilterBar"
@@ -41,6 +42,7 @@ export function BoardLayout() {
           </div>
         </div>
         <AddTaskFAB />
+        <AddTaskSheet />
       </SidebarInset>
     </SidebarProvider>
   )
