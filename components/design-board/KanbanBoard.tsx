@@ -15,7 +15,6 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 
 import { Column } from "@/components/design-board/Column"
 import { Card, CardContent } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { useBoardStore } from "@/lib/store"
 import { BoardStage, Task } from "@/lib/types"
 
@@ -174,7 +173,7 @@ export function KanbanBoard() {
 
   return (
     <div className="px-4 pb-8 lg:px-6 lg:pb-10">
-      <ScrollArea className="w-full">
+      <div className="w-full overflow-x-auto overflow-y-hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -182,7 +181,7 @@ export function KanbanBoard() {
           onDragCancel={() => setActiveTaskId(null)}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex min-h-[calc(100vh-13rem)] gap-4 py-4">
+          <div className="flex w-max min-h-[calc(100vh-13rem)] gap-4 py-4 pl-1 pr-4">
             {columns.map((column) => (
               <Column key={column.id} column={column} tasks={filteredTasks[column.id]} />
             ))}
@@ -198,7 +197,7 @@ export function KanbanBoard() {
             ) : null}
           </DragOverlay>
         </DndContext>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
