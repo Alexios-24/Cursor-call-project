@@ -1,5 +1,5 @@
 import { BoardLayout } from "@/components/design-board/BoardLayout"
 
-export default function Page() {
+export default function DesignBoardPage() {
   return <BoardLayout />
 }
